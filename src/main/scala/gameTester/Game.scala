@@ -11,8 +11,9 @@ object Game extends App {
   val renderer = new Renderer()
 
   val vertices = Array(-0.5f, 0.5f, 0f, -0.5f, -0.5f, 0f, 0.5f, -0.5f, 0f, 0.5f, -0.5f, 0f, 0.5f, 0.5f, 0f, -0.5f, 0.5f, 0f)
+  val indices = Array(0, 1, 3, 3, 1, 2)
 
-  val model = loader.loadToVAO(vertices)
+  val model = loader.loadToVAO(vertices, indices)
 
   while(!Display.isCloseRequested()) {
     renderer.prepare()

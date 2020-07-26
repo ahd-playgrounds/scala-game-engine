@@ -1,6 +1,6 @@
 package renderEngine
 
-import java.nio.FloatBuffer
+import java.nio.{FloatBuffer,IntBuffer}
 
 import org.lwjgl.BufferUtils
 import org.lwjgl.opengl.GL11
@@ -11,14 +11,16 @@ import org.lwjgl.opengl.GL20._
 import scala.collection.mutable.ListBuffer
 
 class Loader {
+  import Helpers._
   var vaos = new ListBuffer[Int]()
   var vbos = new ListBuffer[Int]()
 
-  def loadToVAO(positions: Array[Float]): RawModel = {
+  def loadToVAO(positions: Array[Float], indices: Array[Int]): RawModel = {
     val vaoID = createVAO()
+    bindIndicesBuffer(indices)
     storeDataInAttrList(0,positions);
     unbindVAO()
-    new RawModel(vaoID, positions.length / 3)
+    new RawModel(vaoID, indices.length)
   }
 
   def cleanUp(): Unit = {
@@ -27,18 +29,21 @@ class Loader {
   }
 
   private def createVAO(): Int = {
-    val vaoID = glGenVertexArrays();
+    val vaoID = glGenVertexArrays()
     vaos += vaoID
     glBindVertexArray(vaoID)
     vaoID
   }
 
-  private def storeDataInAttrList(attrNum: Int, data: Array[Float]): Unit = {
-    val vboID =glGenBuffers()
+  private def createVBO(): Int = {
+    val vboID = glGenBuffers()
     vbos += vboID
-    glBindBuffer(GL_ARRAY_BUFFER, vboID)
-    val buffer = storeDataInFloatBuffer(data)
-    glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW)
+    vboID
+  }
+
+  private def storeDataInAttrList(attrNum: Int, data: Array[Float]): Unit = {
+    glBindBuffer(GL_ARRAY_BUFFER, createVBO())
+    glBufferData(GL_ARRAY_BUFFER, storeDataInBuffer(data), GL_STATIC_DRAW)
     glVertexAttribPointer(
       attrNum,
       3,
@@ -50,13 +55,26 @@ class Loader {
     glBindBuffer(GL_ARRAY_BUFFER, 0)
   }
 
-  private def storeDataInFloatBuffer(data: Array[Float]): FloatBuffer = {
-    val buffer = BufferUtils.createFloatBuffer(data.length)
-    buffer.put(data).flip()
+  private def unbindVAO(): Unit = {
+    glBindVertexArray(0)
+  }
+
+  private def bindIndicesBuffer(indices: Array[Int]): Unit = {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, createVBO())
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, storeDataInBuffer(indices), GL_STATIC_DRAW)
+  }
+}
+
+object Helpers {
+  def storeDataInBuffer(data: Array[Float]): FloatBuffer = {
+    val buffer = BufferUtils.createFloatBuffer(data.length).put(data)
+    buffer.flip()
     buffer
   }
 
-  private def unbindVAO(): Unit = {
-    glBindVertexArray(0)
+  def storeDataInBuffer(data: Array[Int]): IntBuffer = {
+    val buffer = BufferUtils.createIntBuffer(data.length).put(data)
+    buffer.flip()
+    buffer
   }
 }
